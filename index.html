@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Siduff Institute Students Quiz</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: url("Logo.jpg") no-repeat center center fixed;
+      background-size: cover;
+    }
+    .overlay {
+      background-color: rgba(255, 255, 255, 0.85);
+      min-height: 100vh;
+      padding: 0;
+    }
+    header {
+      background: #002147; /* Dark Blue */
+      color: white;
+      padding: 15px 20px 0 20px;
+    }
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-top img {
+      height: 50px;
+      margin-right: 15px;
+    }
+    .header-top h1 {
+      font-size: 11px;
+      margin: 0;
+      flex-grow: 1;
+      text-align: left;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .header-bottom {
+      background: #FFD700; /* Thick Yellow */
+      text-align: center;
+      padding: 10px 0;
+      font-size: 13px;
+      font-weight: bold;
+      color: #002147;
+    }
+    .container {
+      max-width: 650px;
+      margin: 30px auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0px 4px 12px rgba(0,0,0,0.2);
+      padding: 20px;
+      text-align: center;
+    }
+    h2 { margin-bottom: 15px; }
+    .options label {
+      display: block;
+      margin-bottom: 10px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .timer {
+      font-size: 18px;
+      color: red;
+      font-weight: bold;
+      margin-bottom: 15px;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+    button:hover { background: #0056b3; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table, th, td {
+      border: 1px solid #333;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background: #002147;
+      color: white;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <div class="overlay">
+    <!-- Header -->
+    <header>
+      <div class="header-top">
+        <img src="Logo.jpg" alt="Logo">
+        <h1>SIDUFF INSTITUTE OF MODERN TECHNOLOGY</h1>
+      </div>
+      <div class="header-bottom">
+        Students Performance Test
+      </div>
+    </header>
+
+    <!-- Student Dashboard -->
+    <div class="container" id="dashboard">
+      <h2>Enter Your Details</h2>
+      <input type="text" id="studentName" placeholder="Enter Full Name"><br><br>
+      <input type="text" id="studentID" placeholder="Enter Student ID"><br><br>
+      <button onclick="startQuiz()">Start Quiz</button>
+      <br><br>
+      <button onclick="showTeacherLogin()">Teacher Login</button>
+    </div>
+
+    <!-- Quiz Section -->
+    <div class="container" id="quizBox" style="display:none;">
+      <h2 id="question">Loading Question...</h2>
+      <div class="timer" id="timer">Time left: 20s</div>
+      <div class="options" id="options"></div>
+      <button onclick="nextQuestion()">Next</button>
+    </div>
+
+    <!-- Result Section -->
+    <div class="container" id="resultBox" style="display:none;">
+      <h2>Quiz Completed!</h2>
+      <p id="resultText"></p>
+      <button onclick="location.reload()">Exit</button>
+    </div>
+
+    <!-- Teacher Login -->
+    <div class="container" id="teacherLogin" style="display:none;">
+      <h2>Teacher Login</h2>
+      <input type="password" id="teacherPass" placeholder="Enter Password"><br><br>
+      <button onclick="teacherAccess()">Login</button>
+    </div>
+
+    <!-- Teacher Dashboard -->
+    <div class="container" id="teacherDashboard" style="display:none;">
+      <h2>Students Results</h2>
+      <table>
+        <thead>
+          <tr><th>Name</th><th>ID</th><th>Score</th></tr>
+        </thead>
+        <tbody id="resultsTable"></tbody>
+      </table>
+      <button onclick="location.reload()">Logout</button>
+    </div>
+  </div>
+
+  <script>
+    const questions = [
+      { q: "What does CPU stand for?", options: ["Central Processing Unit", "Computer Personal Unit", "Central Print Utility", "Control Processing User"], answer: 0 },
+      { q: "Which is an input device?", options: ["Monitor", "Keyboard", "Speaker", "Printer"], answer: 1 },
+      { q: "What does RAM stand for?", options: ["Read Access Memory", "Random Access Memory", "Run Active Mode", "Rapid Action Machine"], answer: 1 },
+      { q: "Which one is system software?", options: ["MS Word", "Windows OS", "PowerPoint", "Excel"], answer: 1 }
+    ];
+
+    let currentQuestion = 0;
+    let score = 0;
+    let timeLeft = 20;
+    let timer;
+    let studentName, studentID;
+
+    function startQuiz() {
+      studentName = document.getElementById("studentName").value;
+      studentID = document.getElementById("studentID").value;
+      if (!studentName || !studentID) {
+        alert("Please enter Name and ID!");
+        return;
+      }
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("quizBox").style.display = "block";
+      loadQuestion();
+    }
+
+    function loadQuestion() {
+      if (currentQuestion >= questions.length) {
+        endQuiz();
+        return;
+      }
+      document.getElementById("question").innerText = questions[currentQuestion].q;
+      const optionsDiv = document.getElementById("options");
+      optionsDiv.innerHTML = "";
+      questions[currentQuestion].options.forEach((opt, i) => {
+        optionsDiv.innerHTML += `
+          <label>
+            <input type="radio" name="option" value="${i}"> ${opt}
+          </label>
+        `;
+      });
+      timeLeft = 20;
+      document.getElementById("timer").innerText = `Time left: ${timeLeft}s`;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById("timer").innerText = `Time left: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          nextQuestion();
+        }
+      }, 1000);
+    }
+
+    function nextQuestion() {
+      const selected = document.querySelector('input[name="option"]:checked');
+      if (selected && parseInt(selected.value) === questions[currentQuestion].answer) {
+        score++;
+      }
+      currentQuestion++;
+      loadQuestion();
+    }
+
+    function endQuiz() {
+      clearInterval(timer);
+      document.getElementById("quizBox").style.display = "none";
+      document.getElementById("resultBox").style.display = "block";
+      document.getElementById("resultText").innerText = 
+        `Name: ${studentName} | ID: ${studentID} | Score: ${score}/${questions.length}`;
+      
+      // Save result to local storage
+      let results = JSON.parse(localStorage.getItem("quizResults")) || [];
+      results.push({ name: studentName, id: studentID, score: score });
+      localStorage.setItem("quizResults", JSON.stringify(results));
+    }
+
+    // Teacher functions
+    function showTeacherLogin() {
+      document.getElementById("dashboard").style.display = "none";
+      document.getElementById("teacherLogin").style.display = "block";
+    }
+
+    function teacherAccess() {
+      const pass = document.getElementById("teacherPass").value;
+      if (pass === "admin123") { // Change password here
+        document.getElementById("teacherLogin").style.display = "none";
+        document.getElementById("teacherDashboard").style.display = "block";
+        loadResults();
+      } else {
+        alert("Wrong password!");
+      }
+    }
+
+    function loadResults() {
+      let results = JSON.parse(localStorage.getItem("quizResults")) || [];
+      const table = document.getElementById("resultsTable");
+      table.innerHTML = "";
+      results.forEach(r => {
+        table.innerHTML += `<tr><td>${r.name}</td><td>${r.id}</td><td>${r.score}</td></tr>`;
+      });
+    }
+  </script>
+</body>
+</html>
